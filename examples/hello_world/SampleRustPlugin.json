@@ -1,10 +1,9 @@
 {
-  "locator":"libWPEFrameworkRustAdapter.so",
-  "classname":"RustAdapter",
-  "callsign":"hello_world",
-  "autostart":true,
-  "configuration": {
-    "outofprocess_rust": false
-  }
+ "locator":"libWPEFrameworkRustAdapter.so",
+ "classname":"RustAdapter",
+ "callsign":"hello_world",
+ "autostart":true,
+ "configuration": {
+   "outofprocess": true
  }
- 
+}
