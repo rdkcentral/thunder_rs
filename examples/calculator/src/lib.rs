@@ -74,13 +74,13 @@ impl Calculator {
 }
 
 impl thunder_rs::Plugin for Calculator {
-  fn on_message(&self, json: String, ctx: thunder_rs::RequestContext) {
+  fn on_message(&mut self, json: String, ctx: thunder_rs::RequestContext) {
     let req: json::JsonValue = json::parse(json.as_str())
       .unwrap();
     self.dispatch_request(req, ctx);
   }
-  fn on_client_connect(&self, _channel_id: u32) { }
-  fn on_client_disconnect(&self, _channel_id: u32) { }
+  fn on_client_connect(&mut self, _channel_id: u32) { }
+  fn on_client_disconnect(&mut self, _channel_id: u32) { }
 }
 
 fn sample_plugin_init(proto: Box<dyn thunder_rs::PluginProtocol>) -> Box<dyn thunder_rs::Plugin> {
