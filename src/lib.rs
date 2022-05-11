@@ -27,9 +27,9 @@ pub trait PluginProtocol {
 }
 
 pub trait Plugin {
-  fn on_message(&self, json: String, ctx: RequestContext);
-  fn on_client_connect(&self, channel_id: u32);
-  fn on_client_disconnect(&self, channel_id: u32);
+  fn on_message(&mut self, json: String, ctx: RequestContext);
+  fn on_client_connect(&mut self, channel_id: u32);
+  fn on_client_disconnect(&mut self, channel_id: u32);
 }
 
 pub struct RequestContext {
@@ -98,7 +98,7 @@ impl PluginProtocol for DefaultPluginProtocol {
 }
 
 impl CPlugin {
-  fn on_incoming_message(&self, json_req: *const c_char, ctx: CRequestContext) {
+  fn on_incoming_message(&mut self, json_req: *const c_char, ctx: CRequestContext) {
     let req = cstr_to_string(json_req);
     let req_ctx = RequestContext {
       channel_id: ctx.channel_id,
@@ -106,10 +106,10 @@ impl CPlugin {
     };
     self.plugin.on_message(req, req_ctx);
   }
-  fn on_client_connect(&self, channel_id: u32) {
+  fn on_client_connect(&mut self, channel_id: u32) {
     self.plugin.on_client_connect(channel_id);
   }
-  fn on_client_disconnect(&self, channel_id: u32) {
+  fn on_client_disconnect(&mut self, channel_id: u32) {
     self.plugin.on_client_disconnect(channel_id);
   }
 }
@@ -160,7 +160,7 @@ pub extern fn wpe_rust_plugin_invoke(ptr: *mut CPlugin, json_req: *const c_char,
   assert!(!ptr.is_null());
   assert!(!json_req.is_null());
 
-  let plugin = unsafe{ &*ptr };
+  let plugin = unsafe{ &mut *ptr };
   let uncaught_error = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
     plugin.on_incoming_message(json_req, req_ctx);
   }));
@@ -178,7 +178,7 @@ pub extern fn wpe_rust_plugin_invoke(ptr: *mut CPlugin, json_req: *const c_char,
 pub extern fn wpe_rust_plugin_on_client_connect(ptr: *mut CPlugin, channel_id: u32) {
   assert!(!ptr.is_null());
 
-  let plugin = unsafe{ &*ptr };
+  let plugin = unsafe{ &mut *ptr };
   let uncaught_error = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
     plugin.on_client_connect(channel_id);
   }));
@@ -196,7 +196,7 @@ pub extern fn wpe_rust_plugin_on_client_connect(ptr: *mut CPlugin, channel_id: u
 pub extern fn wpe_rust_plugin_on_client_disconnect(ptr: *mut CPlugin, channel_id: u32) {
   assert!(!ptr.is_null());
 
-  let plugin = unsafe{ &*ptr };
+  let plugin = unsafe{ &mut *ptr };
   let uncaught_error = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
     plugin.on_client_disconnect(channel_id);
   }));

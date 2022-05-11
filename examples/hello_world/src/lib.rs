@@ -21,7 +21,7 @@ struct SamplePlugin {
 }
 
 impl thunder_rs::Plugin for SamplePlugin {
-  fn on_message(&self, json: String, ctx: thunder_rs::RequestContext) {
+  fn on_message(&mut self, json: String, ctx: thunder_rs::RequestContext) {
     println!("TODO: dispatch incoming message {}", json);
     println!("\tchannel_id:{0}", ctx.channel_id);
     println!("\tauth_token:{0}", ctx.auth_token);
@@ -37,13 +37,13 @@ impl thunder_rs::Plugin for SamplePlugin {
   // TODO: we should probably add the auth_token to this call. At the current time
   // this isn't too useful. Applications will likely ignore and just lazily track
   // connected clients when the make calls that get delivered via on_message
-  fn on_client_connect(&self, channel_id: u32) {
+  fn on_client_connect(&mut self, channel_id: u32) {
     println!("client_connect:{}", channel_id);
   }
 
   // TODO: If you're tracking state about a client, you also would like to know
   // when that client disconnects. you get that inication here
-  fn on_client_disconnect(&self, channel_id: u32) {
+  fn on_client_disconnect(&mut self, channel_id: u32) {
     println!("client_disconnect:{}", channel_id);
   }
 }
