@@ -4,6 +4,9 @@
  "callsign":"hello_world",
  "autostart":true,
  "configuration": {
-   "outofprocess": true
+  "outofprocess": false,
+  "address": "127.0.0.1",
+  "port": 55556,
+  "autoexec": true
  }
 }

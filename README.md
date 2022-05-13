@@ -49,11 +49,11 @@ cmake -Hrdkservices -Bbuild/rdkservices \
 make -C build/rdkservices && make -C build/rdkservices install
 ```
 
-Confirm that `${THUNDER_INSTALL_DIR}/usr/lib/wpeframework/plugins/libWPEFrameworkRustAdapter.so` exists. This is the acutal
-Thunder plugin that bridges (adapts) the native C++ interaces to rust traits, structs, and other types.
+Confirm that both libWPEFrameworkRustAdapter.so and WPEHost were built and installed
 
-Confirm that `${THUNDER_INSTALL_DIR}/usr/bin/WPEHost` exist.  This is the remote process which we be spawned
-when running the plugin in outofprocess mode.
+```
+ls -l ${THUNDER_INSTALL_DIR}/usr/lib/wpeframework/plugins/libWPEFrameworkRustAdapter.so ${THUNDER_INSTALL_DIR}/usr/bin/WPEHost
+```
 
 ## Build and install the example plugin (rust plugin)
 
@@ -65,7 +65,7 @@ ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins, but this is not strictly necess
 Thunder however, requires that the configuration file for the plugin be installed into ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins directory.
 
 ```
-git clone https://github.com/rdkcentral/thunder_rs.git -b sprint/2205
+git clone https://github.com/rdkcentral/thunder_rs.git -b main
 cargo build --manifest-path ${THUNDER_ROOT}/thunder_rs/examples/hello_world/Cargo.toml --target-dir ${THUNDER_ROOT}/build/thunder_rs/examples/hello_world
 cp ${THUNDER_ROOT}/build/thunder_rs/examples/hello_world/debug/libhello_world.so ${THUNDER_INSTALL_DIR}/usr/lib/plugins
 cp ${THUNDER_ROOT}/thunder_rs/examples/hello_world\SampleRustPlugin.json ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins
@@ -129,6 +129,28 @@ The previous step ran the Rust plugin in the same process as WPEFramework. To ru
 the "outofprocess" field to true in ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins/SampleRustPlugin.json
 
 To test, repeat steps "Launch WPEFramework" and "Launch the sample client" and verify results.
+
+### Remote run of plugin
+
+Edit ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins/SampleRustPlugin.json and update these fields as such:
+
+```
+   "outofprocess": true,
+   "address": "0.0.0.0",
+   "port": 55556,
+   "autoexec": false
+```
+
+Restart WPEFramework as before.  The rust adapter will bind a socket to all interfaces on port 55556.
+Its up to you to obtain the lan ip address for the device running WPEFramework, but given that IP you 
+can connect your plugin remotely as such.
+
+Build rdkservices and thunder_rs and you plugin as before for the other device. Then on that other device
+do something like this example from my mackbook where WPEFramework was running on another maching at 10.0.0.192:
+
+```
+build/rdkservices/RustAdapter/WPEHost/debug/WPEHost  build/thunder_rs/examples/hello_world/debug/libhello_world.dylib 10.0.0.192 55556
+```
 
 # Extra Commands:
 
