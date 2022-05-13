@@ -52,7 +52,7 @@ make -C build/rdkservices && make -C build/rdkservices install
 Confirm that `${THUNDER_INSTALL_DIR}/usr/lib/wpeframework/plugins/libWPEFrameworkRustAdapter.so` exists. This is the acutal
 Thunder plugin that bridges (adapts) the native C++ interaces to rust traits, structs, and other types.
 
-Confirm that `${THUNDER_INSTALL_DIR}/usr/bin/rust_adapter_process` exist.  This is the remote process which we be spawned
+Confirm that `${THUNDER_INSTALL_DIR}/usr/bin/WPEHost` exist.  This is the remote process which we be spawned
 when running the plugin in outofprocess mode.
 
 ## Build and install the example plugin (rust plugin)
@@ -135,13 +135,13 @@ To test, repeat steps "Launch WPEFramework" and "Launch the sample client" and v
 ## Build the rust_adapter_process directly
 
 ### To pick up new changes from thunder_rs repo
-cargo update --manifest-path ${THUNDER_ROOT}/rdkservices/RustAdapter/rust_adapter_process/Cargo.toml
+cargo update --manifest-path ${THUNDER_ROOT}/rdkservices/RustAdapter/WPEHost/Cargo.toml
 
 ### Build it
-cargo build --manifest-path ${THUNDER_ROOT}/rdkservices/RustAdapter/rust_adapter_process/Cargo.toml \
---target-dir ${THUNDER_ROOT}/build/rdkservices/RustAdapter/rust_adapter_process
+cargo build --manifest-path ${THUNDER_ROOT}/rdkservices/RustAdapter/WPEHost/Cargo.toml \
+--target-dir ${THUNDER_ROOT}/build/rdkservices/RustAdapter/WPEHost
 
-cp ${THUNDER_ROOT}/build/rdkservices/RustAdapter/rust_adapter_process/debug/rust_adapter_process ${THUNDER_INSTALL_DIR}/usr/bin
+cp ${THUNDER_ROOT}/build/rdkservices/RustAdapter/WPEHost/debug/WPEHost ${THUNDER_INSTALL_DIR}/usr/bin
 
 
 # TODO
