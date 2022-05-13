@@ -23,7 +23,7 @@ use std::os::raw::{c_char, c_void};
 type SendToFunction = unsafe extern "C" fn (u32, *const c_char, plugin_ctx: *const c_void);
 
 pub trait PluginProtocol {
-  fn send_to(&self,  channel_id: u32, json: String);
+  fn send_to(&mut self,  channel_id: u32, json: String);
 }
 
 pub trait Plugin {
@@ -89,7 +89,7 @@ struct DefaultPluginProtocol {
 }
 
 impl PluginProtocol for DefaultPluginProtocol {
-  fn send_to(&self, channel_id: u32, json: String) {
+  fn send_to(&mut self, channel_id: u32, json: String) {
     let c_str = CString::new(json).unwrap();
     unsafe {
       (self.send_func)(channel_id, c_str.as_ptr(), self.send_ctx);

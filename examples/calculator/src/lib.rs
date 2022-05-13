@@ -21,7 +21,7 @@ struct Calculator {
 }
 
 impl Calculator {
-  fn dispatch_request(&self, req: json::JsonValue, ctx: thunder_rs::RequestContext) {
+  fn dispatch_request(&mut self, req: json::JsonValue, ctx: thunder_rs::RequestContext) {
     if let Some(method) = req["method"].as_str() {
       match method {
         "calculator.add" => { self.add(req, ctx); }
@@ -33,7 +33,7 @@ impl Calculator {
     }
   }
 
-  fn add(&self, req: json::JsonValue, ctx: thunder_rs::RequestContext) {
+  fn add(&mut self, req: json::JsonValue, ctx: thunder_rs::RequestContext) {
     let mut sum = 0;
     for val in req["params"].members() {
       if let Some(n) = val.as_u32() {
@@ -50,7 +50,7 @@ impl Calculator {
     self.send_response(res, ctx);
   }
 
-  fn mul(&self, req: json::JsonValue, ctx: thunder_rs::RequestContext) {
+  fn mul(&mut self, req: json::JsonValue, ctx: thunder_rs::RequestContext) {
     let mut product = 0;
     for val in req["params"].members() {
       if let Some(n) = val.as_u32() {
@@ -67,7 +67,7 @@ impl Calculator {
     self.send_response(res, ctx);
   }
 
-  fn send_response(&self, res: json::JsonValue, ctx: thunder_rs::RequestContext) {
+  fn send_response(&mut self, res: json::JsonValue, ctx: thunder_rs::RequestContext) {
     let s = json::stringify(res);
     self.proto.send_to(ctx.channel_id, s);
   }
