@@ -49,32 +49,68 @@ cmake -Hrdkservices -Bbuild/rdkservices \
 make -C build/rdkservices && make -C build/rdkservices install
 ```
 
-Confirm that both libWPEFrameworkRustAdapter.so and WPEHost were built and installed
+Confirm that libWPEFrameworkRustAdapter.so was built and installed
 
 ```
-ls -l ${THUNDER_INSTALL_DIR}/usr/lib/wpeframework/plugins/libWPEFrameworkRustAdapter.so ${THUNDER_INSTALL_DIR}/usr/bin/WPEHost
+ls -l ${THUNDER_INSTALL_DIR}/usr/lib/wpeframework/plugins/libWPEFrameworkRustAdapter.so
 ```
 
-## Build and install the example plugin (rust plugin)
+## Build and install thunder_rs
 
-The next build step should produce a libarary named `libhello_world.so` in the build tree. This is the actual rust plugin. 
-This file and any dependencies that you may have added are required to be in the `LD_LIBRARY_PATH`. 
+thunder_rs contains a few crates: sdk, host, examples/* 
+
+The 'sdk' is a required depency for any plugin to work with RustAdapter.
+Each 'examples/*' has a relative dependency on sdk.
+The 'host' is an application binary which is launched by RustAdapter when running 'outofprocess'.
+
+To build all the crates in thunder_rs:
+
+```
+cd ${THUNDER_ROOT}
+
+git clone https://github.com/rdkcentral/thunder_rs.git -b main
+
+cargo build --manifest-path ${THUNDER_ROOT}/thunder_rs/Cargo.toml --target-dir ${THUNDER_ROOT}/build/thunder_rs
+
+cp ${THUNDER_ROOT}/build/thunder_rs_moves/debug/lib*.so ${THUNDER_INSTALL_DIR}/usr/lib/plugins
+cp ${THUNDER_ROOT}/build/thunder_rs_moves/debug/WPEHost ${THUNDER_INSTALL_DIR}/usr/bin
+```
+
+If you rebase thunder_rs later and the Cargo depencies have changed in any of its crates it may be required to update as follows:
+```
+cargo update --manifest-path ${THUNDER_ROOT}/thunder_rs/Cargo.toml
+```
+And then rebuild per the previous step.
+
+If you ever want to build only and example like hello_world, which will also pull in the relative sdk:
+```
+cargo build --manifest-path ${THUNDER_ROOT}/thunder_rs/examples/hello_world/Cargo.toml --target-dir ${THUNDER_ROOT}/build/thunder_rs
+cp ${THUNDER_ROOT}/build/thunder_rs/debug/libhello_world.so ${THUNDER_INSTALL_DIR}/usr/lib/plugins
+```
+
+And to build just the host:
+```
+cargo build --manifest-path ${THUNDER_ROOT}/thunder_rs/host/Cargo.toml --target-dir ${THUNDER_ROOT}/build/thunder_rs
+cp ${THUNDER_ROOT}/build/thunder_rs/debug/WPEHost ${THUNDER_INSTALL_DIR}/usr/bin
+```
+
+When running WPEFramework or WPEHost (see below) the plugin shared lib (e.g. libhello_world.so) and any of its dependencies 
+are required to be in the `LD_LIBRARY_PATH`. 
 To run like normal C++ plugins, we suggest that this be placed into the plugins directory under the 
 ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins, but this is not strictly necessary and is inconvenient during edit, compile, test cycles.
 
 Thunder however, requires that the configuration file for the plugin be installed into ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins directory.
 
+So in the case of the hello_world example copy the config file:
+
 ```
-git clone https://github.com/rdkcentral/thunder_rs.git -b main
-cargo build --manifest-path ${THUNDER_ROOT}/thunder_rs/examples/hello_world/Cargo.toml --target-dir ${THUNDER_ROOT}/build/thunder_rs/examples/hello_world
-cp ${THUNDER_ROOT}/build/thunder_rs/examples/hello_world/debug/libhello_world.so ${THUNDER_INSTALL_DIR}/usr/lib/plugins
-cp ${THUNDER_ROOT}/thunder_rs/examples/hello_world\SampleRustPlugin.json ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins
+cp ${THUNDER_ROOT}/thunder_rs/examples/hello_world/SampleRustPlugin.json ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins/SampleRustPlugin.json
 ```
 
 ## test with example client
 
 There's a nodejs application in the examples directory that can be used to test out the HelloWorld plugin. 
-This app makes a WebSocket connection to Thunder and repeatedly (1/sec) sends JSON/RPC requests to the plugin and gets "Hell from rust" back. 
+This app makes a WebSocket connection to Thunder and repeatedly (1/sec) sends JSON/RPC requests to the plugin and gets "Hello from rust" back. 
 
 ### Setup the sample client
 
@@ -128,6 +164,12 @@ To end the test hit 'q' in the WPEFramework console.
 The previous step ran the Rust plugin in the same process as WPEFramework. To run it out of process the outofprocess, set
 the "outofprocess" field to true in ${THUNDER_INSTALL_DIR}/etc/WPEFramework/plugins/SampleRustPlugin.json
 
+```
+   "outofprocess": true,
+   "address": "0.0.0.0",
+   "port": 55556,
+   "autoexec": true
+
 To test, repeat steps "Launch WPEFramework" and "Launch the sample client" and verify results.
 
 ### Remote run of plugin
@@ -149,22 +191,8 @@ Build rdkservices and thunder_rs and you plugin as before for the other device. 
 do something like this example from my mackbook where WPEFramework was running on another maching at 10.0.0.192:
 
 ```
-build/rdkservices/RustAdapter/WPEHost/debug/WPEHost  build/thunder_rs/examples/hello_world/debug/libhello_world.dylib 10.0.0.192 55556
+build/thunder_rs/debug/WPEHost  build/thunder_rs/debug/libhello_world.dylib 10.0.0.192 55556
 ```
-
-# Extra Commands:
-
-## Build the rust_adapter_process directly
-
-### To pick up new changes from thunder_rs repo
-cargo update --manifest-path ${THUNDER_ROOT}/rdkservices/RustAdapter/WPEHost/Cargo.toml
-
-### Build it
-cargo build --manifest-path ${THUNDER_ROOT}/rdkservices/RustAdapter/WPEHost/Cargo.toml \
---target-dir ${THUNDER_ROOT}/build/rdkservices/RustAdapter/WPEHost
-
-cp ${THUNDER_ROOT}/build/rdkservices/RustAdapter/WPEHost/debug/WPEHost ${THUNDER_INSTALL_DIR}/usr/bin
-
 
 # TODO
 - Check this. Is there a way to configure Thunder to search other directories for plugin config files?

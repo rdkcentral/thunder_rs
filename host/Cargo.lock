@@ -3,46 +3,16 @@
 version = 3
 
 [[package]]
-name = "WPEHost"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "libloading",
- "thunder_rs",
-]
-
-[[package]]
 name = "byteorder"
 version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
-name = "calculator"
-version = "0.1.0"
-dependencies = [
- "json",
- "thunder_rs",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
-
-[[package]]
-name = "hello_world"
-version = "0.1.0"
-dependencies = [
- "thunder_rs",
-]
-
-[[package]]
-name = "json"
-version = "0.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
 
 [[package]]
 name = "libloading"
@@ -55,8 +25,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "WPEHost"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "libloading",
+ "thunder_rs",
+]
+
+[[package]]
 name = "thunder_rs"
 version = "0.1.0"
+source = "git+https://github.com/mrcomcast123/thunder_rs.git?branch=main#5f24ae5e1b294fc38938a5f682b6bccbd480b977"
 
 [[package]]
 name = "winapi"
