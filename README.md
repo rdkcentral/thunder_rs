@@ -38,6 +38,8 @@ rdkservices has the RustAdapter C++ plugin which allows a Rust plugin to be load
 From inside the THUNDER_ROOT (from the last step):
 
 ```
+cd ${THUNDER_ROOT}
+
 git clone https://github.com/rdkcentral/rdkservices -b sprint/2205
 
 cmake -Hrdkservices -Bbuild/rdkservices \
@@ -72,8 +74,8 @@ git clone https://github.com/rdkcentral/thunder_rs.git -b main
 
 cargo build --manifest-path ${THUNDER_ROOT}/thunder_rs/Cargo.toml --target-dir ${THUNDER_ROOT}/build/thunder_rs
 
-cp ${THUNDER_ROOT}/build/thunder_rs_moves/debug/lib*.so ${THUNDER_INSTALL_DIR}/usr/lib/plugins
-cp ${THUNDER_ROOT}/build/thunder_rs_moves/debug/WPEHost ${THUNDER_INSTALL_DIR}/usr/bin
+cp ${THUNDER_ROOT}/build/thunder_rs/debug/lib*.so ${THUNDER_INSTALL_DIR}/usr/lib/plugins
+cp ${THUNDER_ROOT}/build/thunder_rs/debug/WPEHost ${THUNDER_INSTALL_DIR}/usr/bin
 ```
 
 If you rebase thunder_rs later and the Cargo depencies have changed in any of its crates it may be required to update as follows:
