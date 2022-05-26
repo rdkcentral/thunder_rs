@@ -18,13 +18,9 @@
  */
 use std::ffi::CStr;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_void};
+use std::os::raw::c_char;
 
-type SendToFunction = unsafe extern "C" fn (u32, *const c_char, plugin_ctx: *const c_void);
-
-pub trait PluginProtocol {
-  fn send_to(&mut self,  channel_id: u32, json: String);
-}
+type SendToFunction = unsafe extern "C" fn (u32, *const c_char, u32);
 
 pub trait Plugin {
   fn on_message(&mut self, json: String, ctx: RequestContext);
@@ -32,15 +28,37 @@ pub trait Plugin {
   fn on_client_disconnect(&mut self, channel_id: u32);
 }
 
+#[derive(Clone)]
+pub struct Responder {
+  send_to: SendToFunction,
+  ctx_id: u32
+}
+
+impl Responder {
+  pub fn send_to(&self, channel_id: u32, json: String) {
+    let c_str = CString::new(json).unwrap();
+    unsafe {
+      (self.send_to)(channel_id, c_str.as_ptr(), self.ctx_id);
+    }
+  }
+}
+
 pub struct RequestContext {
   pub channel_id: u32,
-  pub auth_token: String
+  pub auth_token: String,
+  pub responder: Responder
+}
+
+impl RequestContext {
+  pub fn reply(&self, json: String) {
+    self.responder.send_to(self.channel_id, json);
+  }
 }
 
 pub struct ServiceMetadata {
   pub name: &'static str,
   pub version: (u32, u32, u32),
-  pub create: fn (Box<dyn PluginProtocol>) -> Box<dyn Plugin>
+  pub create: fn () -> Box<dyn Plugin>
 }
 
 #[macro_export]
@@ -80,21 +98,9 @@ fn cstr_to_string(s : *const c_char) -> String {
 
 pub struct CPlugin {
   pub name: String,
-  pub plugin: Box<dyn Plugin>
-}
-
-struct DefaultPluginProtocol {
-  send_func: SendToFunction,
-  send_ctx: *const c_void
-}
-
-impl PluginProtocol for DefaultPluginProtocol {
-  fn send_to(&mut self, channel_id: u32, json: String) {
-    let c_str = CString::new(json).unwrap();
-    unsafe {
-      (self.send_func)(channel_id, c_str.as_ptr(), self.send_ctx);
-    }
-  }
+  pub plugin: Box<dyn Plugin>,
+  plugin_ctx: u32,
+  send_to: SendToFunction
 }
 
 impl CPlugin {
@@ -102,7 +108,11 @@ impl CPlugin {
     let req = cstr_to_string(json_req);
     let req_ctx = RequestContext {
       channel_id: ctx.channel_id,
-      auth_token: cstr_to_string(ctx.auth_token)
+      auth_token: cstr_to_string(ctx.auth_token),
+      responder: Responder {
+        send_to: self.send_to.clone(),
+        ctx_id: self.plugin_ctx
+      }
     };
     self.plugin.on_message(req, req_ctx);
   }
@@ -116,20 +126,18 @@ impl CPlugin {
 
 #[no_mangle]
 pub extern fn wpe_rust_plugin_create(_name: *const c_char, send_func: SendToFunction,
-  plugin_ctx: *const c_void, meta_data: *mut ServiceMetadata) -> *mut CPlugin
+  plugin_ctx: u32, meta_data: *mut ServiceMetadata) -> *mut CPlugin
 {
   assert!(!meta_data.is_null());
 
   let service_metadata = unsafe{ &*meta_data };
-  let proto: Box<dyn PluginProtocol> = Box::new(DefaultPluginProtocol {
-    send_func: send_func,
-    send_ctx: plugin_ctx});
-
-  let plugin: Box<dyn Plugin> = (service_metadata.create)(proto);
+  let plugin: Box<dyn Plugin> = (service_metadata.create)();
   let name: String = service_metadata.name.to_string();
   let c_plugin: Box<CPlugin> = Box::new(CPlugin {
     name: name,
-    plugin: plugin 
+    plugin: plugin,
+    plugin_ctx: plugin_ctx,
+    send_to: send_func
   });
 
   Box::into_raw(c_plugin)

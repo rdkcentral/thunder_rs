@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 struct Calculator { 
-  proto: Box<dyn thunder_rs::PluginProtocol>
 }
 
 impl Calculator {
@@ -69,7 +68,7 @@ impl Calculator {
 
   fn send_response(&mut self, res: json::JsonValue, ctx: thunder_rs::RequestContext) {
     let s = json::stringify(res);
-    self.proto.send_to(ctx.channel_id, s);
+    ctx.reply(s);
   }
 }
 
@@ -83,8 +82,8 @@ impl thunder_rs::Plugin for Calculator {
   fn on_client_disconnect(&mut self, _channel_id: u32) { }
 }
 
-fn sample_plugin_init(proto: Box<dyn thunder_rs::PluginProtocol>) -> Box<dyn thunder_rs::Plugin> {
-  Box::new(Calculator{ proto: proto})
+fn sample_plugin_init() -> Box<dyn thunder_rs::Plugin> {
+  Box::new(Calculator{ })
 }
 
 thunder_rs::export_plugin!("Calculator", (1,0,0), sample_plugin_init);

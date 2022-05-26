@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 struct SamplePlugin { 
-  proto: Box<dyn thunder_rs::PluginProtocol>
 }
 
 impl thunder_rs::Plugin for SamplePlugin {
@@ -26,12 +25,17 @@ impl thunder_rs::Plugin for SamplePlugin {
     println!("\tchannel_id:{0}", ctx.channel_id);
     println!("\tauth_token:{0}", ctx.auth_token);
 
-    let res: String = String::from("{\"jsonrpc\":\"2.0\", \"id\":4, \"result\":\"hello from rust\"}");
+    let res: String = format!("{{\"jsonrpc\":\"2.0\", \"id\":4, \"result\":\"Hello from rust thread\"}}");
 
-    // the channel_id is unique per client. if you ever want to send a message to
-    // client, whether that be synchronously responding to a request, asynchronously
-    // responding to a request, or emitting an event, use this API
-    self.proto.send_to(ctx.channel_id, res);
+    // You may clone the responder to use later if you wish, or take ownership
+    // let responder = ctx.responder.clone();
+
+    std::thread::spawn(move || {
+      // This is a convenience method, which just calls
+      // ctx.responder.send_to(ctx.channel_id, res);
+      ctx.reply(res);
+    });
+
   }
 
   // TODO: we should probably add the auth_token to this call. At the current time
@@ -48,8 +52,8 @@ impl thunder_rs::Plugin for SamplePlugin {
   }
 }
 
-fn sample_plugin_init(proto: Box<dyn thunder_rs::PluginProtocol>) -> Box<dyn thunder_rs::Plugin> {
-  Box::new(SamplePlugin{ proto: proto})
+fn sample_plugin_init() -> Box<dyn thunder_rs::Plugin> {
+  Box::new(SamplePlugin{ })
 }
 
 thunder_rs::export_plugin!("SampleRustPlugin", (1,0,0), sample_plugin_init);
