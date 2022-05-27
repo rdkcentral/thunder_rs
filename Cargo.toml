@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-    "sdk", 
-    "examples/calculator",
-    "examples/hello_world"
+  "sdk",
+  "host",
+  "examples/calculator",
+  "examples/hello_world"
 ]

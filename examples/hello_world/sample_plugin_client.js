@@ -23,6 +23,7 @@ function send_message() {
   const s = JSON.stringify(req);
   console.log("send:" + s)
   client.send(s)
+  setTimeout(send_message, 1000)
 }
 
 client.onopen = function(e) {
@@ -33,5 +34,4 @@ client.onmessage = function(msg) {
   console.log("recv:" + msg.data)
   const req = JSON.parse(msg.data)
   // console.log("recv:" + JSON.stringify(req))
-  setTimeout(send_message, 1000)
 }

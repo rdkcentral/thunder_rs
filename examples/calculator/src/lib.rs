@@ -68,7 +68,7 @@ impl Calculator {
 
   fn send_response(&mut self, res: json::JsonValue, ctx: thunder_rs::RequestContext) {
     let s = json::stringify(res);
-    ctx.reply(s);
+    ctx.send(s);
   }
 }
 

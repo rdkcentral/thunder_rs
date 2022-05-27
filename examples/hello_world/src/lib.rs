@@ -16,39 +16,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-struct SamplePlugin { 
-}
+struct SamplePlugin { }
 
 impl thunder_rs::Plugin for SamplePlugin {
   fn on_message(&mut self, json: String, ctx: thunder_rs::RequestContext) {
     println!("TODO: dispatch incoming message {}", json);
-    println!("\tchannel_id:{0}", ctx.channel_id);
+    println!("\tchannel:{0}", ctx.channel);
     println!("\tauth_token:{0}", ctx.auth_token);
 
-    let res: String = format!("{{\"jsonrpc\":\"2.0\", \"id\":4, \"result\":\"Hello from rust thread\"}}");
-
-    // You may clone the responder to use later if you wish, or take ownership
-    // let responder = ctx.responder.clone();
+    // ctx.responder is a std::sync::mpsc::channel. You can clone() if necessary
+    // let tx = ctx.responder.clone();
 
     std::thread::spawn(move || {
-      // This is a convenience method, which just calls
-      // ctx.responder.send_to(ctx.channel_id, res);
-      ctx.reply(res);
-    });
+      // You can also capture the entire RequestContext
+      // let tx = ctx.responder;
 
+      let s = r#"{"jsonrpc":"2.0", "id":4, "result":"Hello from rust"}"#
+        .to_string();
+
+      ctx.responder.send(thunder_rs::Message{ channel: ctx.channel, data: s })
+        .unwrap();
+
+      // RequestContext also have a convenience method
+      // ctx.send(s);
+    });
   }
 
   // TODO: we should probably add the auth_token to this call. At the current time
   // this isn't too useful. Applications will likely ignore and just lazily track
   // connected clients when the make calls that get delivered via on_message
-  fn on_client_connect(&mut self, channel_id: u32) {
-    println!("client_connect:{}", channel_id);
+  fn on_client_connect(&mut self, channel: u32) {
+    println!("client_connect:{}", channel);
   }
 
   // TODO: If you're tracking state about a client, you also would like to know
   // when that client disconnects. you get that inication here
-  fn on_client_disconnect(&mut self, channel_id: u32) {
-    println!("client_disconnect:{}", channel_id);
+  fn on_client_disconnect(&mut self, channel: u32) {
+    println!("client_disconnect:{}", channel);
   }
 }
 

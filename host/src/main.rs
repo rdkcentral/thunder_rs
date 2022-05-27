@@ -130,7 +130,6 @@ pub fn send_response(stream: &mut TcpStream, channel: u32, json: String) {
 }
 
 /*
- */
 struct RemotePluginProtocol  {
   stream: TcpStream
 }
@@ -142,6 +141,7 @@ impl thunder_rs::PluginProtocol for RemotePluginProtocol{
   }
 
 }
+ */
 
 fn load_library(shared_lib_name: &str) -> Box<libloading::Library> {
   println!("RUST REMOTE: load_library {}", shared_lib_name);
@@ -150,13 +150,12 @@ fn load_library(shared_lib_name: &str) -> Box<libloading::Library> {
   }
 }
 
-fn load_plugin(lib: &Box<libloading::Library>, stream: TcpStream) -> Box<dyn thunder_rs::Plugin> {
+fn load_plugin(lib: &Box<libloading::Library>) -> Box<dyn thunder_rs::Plugin> {
   unsafe {
     let sym : libloading::Symbol< *mut thunder_rs::ServiceMetadata > = lib.get(b"thunder_service_metadata\0").unwrap();
     let service_metadata = ptr::NonNull::new(*sym as *mut thunder_rs::ServiceMetadata).unwrap().as_mut();
-    let proto: Box<dyn thunder_rs::PluginProtocol> = Box::new(RemotePluginProtocol{stream: stream});
     println!("RUST REMOTE: load_plugin = {}", service_metadata.name);
-    (service_metadata.create)(proto)
+    (service_metadata.create)()
   }
 }
 
@@ -205,21 +204,32 @@ fn main() -> Result<(), ParseIntError> {
   let addr = format!("{}:{}", args[2], args[3]);
   let mut stream = connect_stream(addr);
 
-  let mut plugin = load_plugin(&lib, stream.try_clone().expect("Cannot clone stream"));
+  let mut plugin = load_plugin(&lib);
 
   let mut running = true;
-  
-  while running {
 
+  let mut writer = stream.try_clone()
+    .expect("failed to clone TcpStream");
+
+  let (tx, rx) = std::sync::mpsc::channel::<thunder_rs::Message>();
+  std::thread::spawn(move || {
+    while running {
+      while let Ok(msg) = rx.recv() {
+        send_response(&mut writer, msg.channel, msg.data);
+      }
+    }
+  });
+
+  while running {
     match read_request(&mut stream) {
       Request::Invoke(req) => {
         println!("RUST REMOTE: invoking");
-        plugin.on_message(req.json, 
-          thunder_rs::RequestContext {
-            channel_id: req.channel,
-            auth_token: req.token
-          }
-        );
+        let req_ctx = thunder_rs::RequestContext {
+          channel: req.channel,
+          auth_token: req.token,
+          responder: tx.clone()
+        };
+        plugin.on_message(req.json,  req_ctx);
       },
       Request::Attach(req) => {
         println!("RUST REMOTE: attaching");

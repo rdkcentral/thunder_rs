@@ -19,39 +19,36 @@
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::c_char;
+use std::sync::mpsc::Sender;
 
 type SendToFunction = unsafe extern "C" fn (u32, *const c_char, u32);
 
 pub trait Plugin {
   fn on_message(&mut self, json: String, ctx: RequestContext);
-  fn on_client_connect(&mut self, channel_id: u32);
-  fn on_client_disconnect(&mut self, channel_id: u32);
+  fn on_client_connect(&mut self, channel: u32);
+  fn on_client_disconnect(&mut self, channel: u32);
+}
+
+pub struct Message {
+  pub channel: u32,
+  pub data: String
 }
 
 #[derive(Clone)]
-pub struct Responder {
-  send_to: SendToFunction,
-  ctx_id: u32
-}
-
-impl Responder {
-  pub fn send_to(&self, channel_id: u32, json: String) {
-    let c_str = CString::new(json).unwrap();
-    unsafe {
-      (self.send_to)(channel_id, c_str.as_ptr(), self.ctx_id);
-    }
-  }
-}
-
 pub struct RequestContext {
-  pub channel_id: u32,
+  pub channel: u32,
   pub auth_token: String,
-  pub responder: Responder
+  pub responder: Sender<Message>
 }
 
 impl RequestContext {
-  pub fn reply(&self, json: String) {
-    self.responder.send_to(self.channel_id, json);
+  pub fn send(&self, json: String) {
+    let m = Message {
+      channel: self.channel,
+      data: json
+    };
+    let _result = self.responder.send(m);
+    // TODO: check result and report any problems
   }
 }
 
@@ -80,7 +77,7 @@ macro_rules! export_plugin {
 
 #[repr(C)]
 pub struct CRequestContext {
-  channel_id: u32,
+  channel: u32,
   auth_token: *const c_char
 }
 
@@ -99,28 +96,25 @@ fn cstr_to_string(s : *const c_char) -> String {
 pub struct CPlugin {
   pub name: String,
   pub plugin: Box<dyn Plugin>,
-  plugin_ctx: u32,
-  send_to: SendToFunction
+  sender: std::sync::mpsc::Sender<Message>
 }
 
 impl CPlugin {
   fn on_incoming_message(&mut self, json_req: *const c_char, ctx: CRequestContext) {
     let req = cstr_to_string(json_req);
     let req_ctx = RequestContext {
-      channel_id: ctx.channel_id,
+      channel: ctx.channel,
       auth_token: cstr_to_string(ctx.auth_token),
-      responder: Responder {
-        send_to: self.send_to.clone(),
-        ctx_id: self.plugin_ctx
-      }
+      responder: self.sender.clone()
     };
+    println!("dispatch from thunder");
     self.plugin.on_message(req, req_ctx);
   }
-  fn on_client_connect(&mut self, channel_id: u32) {
-    self.plugin.on_client_connect(channel_id);
+  fn on_client_connect(&mut self, channel: u32) {
+    self.plugin.on_client_connect(channel);
   }
-  fn on_client_disconnect(&mut self, channel_id: u32) {
-    self.plugin.on_client_disconnect(channel_id);
+  fn on_client_disconnect(&mut self, channel: u32) {
+    self.plugin.on_client_disconnect(channel);
   }
 }
 
@@ -133,11 +127,22 @@ pub extern fn wpe_rust_plugin_create(_name: *const c_char, send_func: SendToFunc
   let service_metadata = unsafe{ &*meta_data };
   let plugin: Box<dyn Plugin> = (service_metadata.create)();
   let name: String = service_metadata.name.to_string();
+
+  let (tx, rx) = std::sync::mpsc::channel::<Message>();
+
   let c_plugin: Box<CPlugin> = Box::new(CPlugin {
     name: name,
     plugin: plugin,
-    plugin_ctx: plugin_ctx,
-    send_to: send_func
+    sender: tx
+  });
+
+  std::thread::spawn(move || {
+    while let Ok(m) = rx.recv() {
+      let c_str = CString::new(m.data).unwrap();
+      unsafe {
+        send_func(m.channel, c_str.as_ptr(), plugin_ctx);
+      }
+    }
   });
 
   Box::into_raw(c_plugin)
@@ -183,12 +188,12 @@ pub extern fn wpe_rust_plugin_invoke(ptr: *mut CPlugin, json_req: *const c_char,
 }
 
 #[no_mangle]
-pub extern fn wpe_rust_plugin_on_client_connect(ptr: *mut CPlugin, channel_id: u32) {
+pub extern fn wpe_rust_plugin_on_client_connect(ptr: *mut CPlugin, channel: u32) {
   assert!(!ptr.is_null());
 
   let plugin = unsafe{ &mut *ptr };
   let uncaught_error = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-    plugin.on_client_connect(channel_id);
+    plugin.on_client_connect(channel);
   }));
 
   match uncaught_error {
@@ -201,12 +206,12 @@ pub extern fn wpe_rust_plugin_on_client_connect(ptr: *mut CPlugin, channel_id: u
 }
 
 #[no_mangle]
-pub extern fn wpe_rust_plugin_on_client_disconnect(ptr: *mut CPlugin, channel_id: u32) {
+pub extern fn wpe_rust_plugin_on_client_disconnect(ptr: *mut CPlugin, channel: u32) {
   assert!(!ptr.is_null());
 
   let plugin = unsafe{ &mut *ptr };
   let uncaught_error = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-    plugin.on_client_disconnect(channel_id);
+    plugin.on_client_disconnect(channel);
   }));
 
   match uncaught_error {
