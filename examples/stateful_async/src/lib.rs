@@ -89,14 +89,12 @@ impl thunder_rs::Plugin for StatefulPlugin {
     println!("\tchannel:{0}", ctx.channel);
     println!("\tauth_token:{0}", ctx.auth_token);
     let tx = self.plugin_tx.clone();
-    std::thread::spawn(move || {
-      async_std::task::block_on(async {
-        let r = tx.send(PluginRequest { json: json, ctx: ctx }).await;
-        match r {
-            Ok(_) => println!("Successfully sent!"),
-            Err(err) => println!("ERR {}", err),
-        }
-       });
+    async_std::task::block_on(async {
+      let r = tx.send(PluginRequest { json: json, ctx: ctx }).await;
+      match r {
+          Ok(_) => println!("Successfully sent!"),
+          Err(err) => println!("ERR {}", err),
+      }
     });
   }
 
