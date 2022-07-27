@@ -1,0 +1,19 @@
+[package]
+name = "stateful_async"
+version = "0.1.0"
+edition = "2021"
+workspace = "../../"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thunder_rs = { path = "../../sdk" }
+async-std = "1.11.0"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.16.1", features = ["macros", "sync", "rt", "signal", "rt-multi-thread"] }
+
+[lib]
+name        = "stateful_async"
+path        = "src/lib.rs"
+crate-type  = ["dylib"]

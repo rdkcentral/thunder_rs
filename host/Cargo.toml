@@ -1,0 +1,9 @@
+[package]
+name = "WPEHost"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thunder_rs = { path = "../sdk" }
+libloading = "0.7.3"
+byteorder = "1.4.3"
