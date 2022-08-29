@@ -2,7 +2,7 @@
   "locator": "libWPEFrameworkRustAdapter.so",
   "classname": "RustAdapter",
   "callsign": "stateful_async",
-  "autostart": true,
+  "autostart": false,
   "configuration": {
     "outofprocess": false,
     "address": "127.0.0.1",
