@@ -22,7 +22,7 @@ function send_message() {
   let req = {};
   req.jsonrpc = "2.0"
   req.id = 5;
-  req.method = "calculator.add";
+  req.method = "add";
   req.params = [2, 2]
 
   const s = JSON.stringify(req);
