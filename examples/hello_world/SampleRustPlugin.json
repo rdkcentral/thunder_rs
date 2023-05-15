@@ -1,10 +1,12 @@
 {
- "locator":"libWPEFrameworkRustAdapter.so",
- "classname":"RustAdapter",
+ "locator":"libWPEFrameworkRustBridge.so",
+ "classname":"RustBridge",
  "callsign":"hello_world",
  "autostart":false,
  "configuration": {
-  "outofprocess": false,
+  "root":{
+   "mode":"Container"
+  },
   "address": "127.0.0.1",
   "port": 55556,
   "autoexec": true

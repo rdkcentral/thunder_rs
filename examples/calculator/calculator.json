@@ -1,6 +1,6 @@
 {
-    "locator":"libWPEFrameworkRustAdapter.so",
-    "classname":"RustAdapter",
+    "locator":"libWPEFrameworkRustBridge.so",
+    "classname":"RustBridge",
     "callsign":"calculator",
     "autostart":false,
     "configuration": {
