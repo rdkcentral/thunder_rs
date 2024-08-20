@@ -1,2 +1,2 @@
 [workspace]
-members = [ "stateful_async" ] 
+members = [ "hello_world", "calculator", "stateful_async" ] 
