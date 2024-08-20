@@ -3,5 +3,7 @@
 members = [
   "sdk",
   "host",
+  "examples/calculator",
+  "examples/hello_world",
   "examples/stateful_async"
 ]
